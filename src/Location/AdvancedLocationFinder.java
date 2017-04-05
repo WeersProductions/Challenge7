@@ -19,6 +19,8 @@ public class AdvancedLocationFinder implements LocationFinder{
     private final int A = -30;
     private final float N =2f;
 
+    private Position lastPosition;
+
 	private HashMap<String, Position> knownLocations; //Contains the known locations of APs. The long is a MAC address.
 
 	public AdvancedLocationFinder(){
@@ -43,10 +45,10 @@ public class AdvancedLocationFinder implements LocationFinder{
 		printMacs(data);
 
 		//Where the value is the MilliWatt.
-		Map<MacRssiPair, Double> macRssiPairMap= new HashMap<>();
-        //Create a map with only the known locations.
+		Map<MacRssiPair, Double> macRssiPairMap = new HashMap<>();
+        //Create a map with only the known locations and make sure it contains 3 elements at most.
         for (MacRssiPair pair : data) {
-            if(knownLocations.containsKey(pair.getMacAsString())) {
+            if(knownLocations.containsKey(pair.getMacAsString()) && macRssiPairMap.size() < 3) {
                 double milliWat = dbmToMilliWatt(pair.getRssi());
                 macRssiPairMap.put(pair, milliWat);
             }
@@ -74,65 +76,66 @@ public class AdvancedLocationFinder implements LocationFinder{
             macRssiPairShiftedPosition.put(entry.getKey(), new Position(knownLocations.get(entry.getKey().getMacAsString()).getX() + shift.getX(), knownLocations.get(entry.getKey().getMacAsString()).getY() + shift.getY()));
 		}
 
-        double r1 = macRssiPairDistance.get(closestPair);
-        double r2 = 0;
-        double d = 0;
-		for (Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
-			if(entry.getValue().getX() == 0 ^ entry.getValue().getY() == 0) {
-				r2 = macRssiPairDistance.get(entry.getKey());
-				if(entry.getValue().getX() == 0) {
-					d = entry.getValue().getY();
-				} else {
-					d = entry.getValue().getX();
+		double x = 0,y = 0;
+
+        if(macRssiPairDistance.size() > 2) {
+			double r1 = macRssiPairDistance.get(closestPair);
+			double r2 = 0;
+			double d = 0;
+			for (Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
+				if(entry.getValue().getX() == 0 ^ entry.getValue().getY() == 0) {
+					r2 = macRssiPairDistance.get(entry.getKey());
+					if(entry.getValue().getX() == 0) {
+						d = entry.getValue().getY();
+					} else {
+						d = entry.getValue().getX();
+					}
+					break;
 				}
-				break;
+			}
+
+			double r3 = 0;
+			double i = 0;
+			double j = 0;
+			for(Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
+				if(entry.getValue().getX() != 0 && entry.getValue().getY() != 0) {
+					r3 = macRssiPairDistance.get(entry.getKey());
+					i = entry.getValue().getX();
+					j = entry.getValue().getY();
+					break;
+				}
+			}
+
+			System.out.println("Shift: " + shift);
+			System.out.println("r1: " + r1);
+			System.out.println("r2: " + r2);
+			System.out.println("r3: " + r3);
+			System.out.println("d:  " + d);
+			System.out.println("i:  " + i);
+			System.out.println("j:  " + j);
+
+			x = (Math.pow(r1, 2) - Math.pow(r2, 2) + Math.pow(d, 2)) / (2 * d);
+			y = (Math.pow(r1, 2) - Math.pow(r3, 2) + Math.pow(i, 2) + Math.pow(j, 2)) / (2 * j) - (i/j) * x;
+			System.out.println("x: " + x);
+			System.out.println("y: " + y);
+			x -= shift.getX();
+			y -= shift.getY();
+			System.out.println("x: " + x);
+			System.out.println("y: " + y);
+			System.out.println("---------------");
+		} else {
+        	if(lastPosition == null) {
+        		Position first = getFirstKnownFromList(data);
+        		x = first.getX();
+        		y = first.getY();
+			} else {
+				x = lastPosition.getX();
+				y = lastPosition.getY();
 			}
 		}
 
-		double r3 = 0;
-		double i = 0;
-		double j = 0;
-		for(Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
-			if(entry.getValue().getX() != 0 && entry.getValue().getY() != 0) {
-				r3 = macRssiPairDistance.get(entry.getKey());
-				i = entry.getValue().getX();
-				j = entry.getValue().getY();
-				break;
-			}
-		}
-
-		System.out.println("Shift: " + shift);
-		System.out.println("r1: " + r1);
-		System.out.println("r2: " + r2);
-		System.out.println("r3: " + r3);
-		System.out.println("d:  " + d);
-		System.out.println("i:  " + i);
-		System.out.println("j:  " + j);
-
-		double x = (Math.pow(r1, 2) - Math.pow(r2, 2) + Math.pow(d, 2)) / (2 * d);
-		double y = (Math.pow(r1, 2) - Math.pow(r3, 2) + Math.pow(i, 2) + Math.pow(j, 2)) / (2 * j) - (i/j) * x;
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
-		x -= shift.getX();
-		y -= shift.getY();
-		System.out.println("x: " + x);
-		System.out.println("y: " + y);
-		System.out.println("---------------");
-
-//        //Where the value is the relative distance.
-//        Map<MacRssiPair, Double> macRssiPairRelativeDistance = new HashMap<>();
-//        if(closest == null) {
-//            System.out.println("NOT POSSIBLE");
-//        }
-//
-//        //Create the map with relative distances.
-//        for(Map.Entry<MacRssiPair, Double> entry : macRssiPairMap.entrySet()) {
-//                macRssiPairRelativeDistance.put(entry.getKey(), Math.pow(2, Math.log(closestDistance) - Math.log(entry.getValue())));
-//        }
-
-		//System.out.println("--------");
-		//return getFirstKnownFromList(data); //return the first known APs location
-		return new Position(x,y);
+		lastPosition = new Position(x,y);
+		return lastPosition;
 	}
 	
 	/**
