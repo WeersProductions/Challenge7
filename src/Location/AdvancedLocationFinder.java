@@ -18,6 +18,10 @@ public class AdvancedLocationFinder implements LocationFinder{
 
     private final int A = -30;
     private final float N =2f;
+    private final float speed = 3.5f; // horst-units per seconds
+
+    private long lastCheckTime = System.currentTimeMillis();
+    private double dt = 1;
 
     private Position lastPosition;
 
@@ -32,6 +36,9 @@ public class AdvancedLocationFinder implements LocationFinder{
 		if(data.length <= 0) {
 			return new Position(0,0);
 		}
+
+		dt = (System.currentTimeMillis() - lastCheckTime) / 1000.0;
+		lastCheckTime = System.currentTimeMillis();
 
 		//Sort the array.
 		Arrays.sort(data, Comparator.comparingInt(o -> o.getRssi()));
@@ -127,31 +134,52 @@ public class AdvancedLocationFinder implements LocationFinder{
 
 			x = (Math.pow(r1, 2) - Math.pow(r2, 2) + Math.pow(d, 2)) / (2 * d);
 			y = (Math.pow(r1, 2) - Math.pow(r3, 2) + Math.pow(i, 2) + Math.pow(j, 2)) / (2 * j) - (i/j) * x;
-			System.out.println("x: " + x);
-			System.out.println("y: " + y);
 			x -= shift.getX();
 			y -= shift.getY();
 			System.out.println("x: " + x);
 			System.out.println("y: " + y);
-			System.out.println("---------------");
+
+			// update coords according to max speed
+	        if (lastPosition != null && !Double.isNaN(y) && Double.isFinite(x)) {
+	            double maxDistTravelled = speed * dt;
+	            double xdiff = (x - lastPosition.getX());
+	            double ydiff = (y - lastPosition.getY());
+	            double oldAndNewPosDist = Math.sqrt(Math.pow(xdiff,2) + Math.pow(ydiff,2));
+	            double scale = maxDistTravelled / oldAndNewPosDist;
+
+	            scale = scale > 1 ? 1 : scale;
+
+	            System.out.println("max: " + maxDistTravelled);
+	            System.out.println("dff: " + oldAndNewPosDist);
+
+	    		x = lastPosition.getX() + xdiff * scale;
+	    		y = lastPosition.getY() + ydiff * scale;
+	        }
+
 		} else {
         	if(lastPosition == null) {
         		Position first = getFirstKnownFromList(data);
         		x = first.getX();
         		y = first.getY();
+        		System.out.println("x: " + x);
+        		System.out.println("y: " + y);
 			} else {
 				x = lastPosition.getX();
 				y = lastPosition.getY();
 			}
 		}
 
-		lastPosition = new Position(x,y);
+
+        lastPosition = new Position(x,y);
+		System.out.println("x: " + x);
+		System.out.println("y: " + y);
+		System.out.println("---------------");
 		return lastPosition;
 	}
 	
 	/**
 	 * Returns the position of the first known AP found in the list of MacRssi pairs
-	 * @param data
+	 * @param datad
 	 * @return
 	 */
 	private Position getFirstKnownFromList(MacRssiPair[] data){
