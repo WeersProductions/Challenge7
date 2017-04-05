@@ -29,6 +29,10 @@ public class AdvancedLocationFinder implements LocationFinder{
 
 	@Override
 	public Position locate(MacRssiPair[] data) {
+		if(data.length <= 0) {
+			return new Position(0,0);
+		}
+
 		//Sort the array.
 		Arrays.sort(data, Comparator.comparingInt(o -> o.getRssi()));
 
@@ -65,6 +69,12 @@ public class AdvancedLocationFinder implements LocationFinder{
 			}
         }
 
+        if(closestPair == null) {
+			System.out.println("Closest pair was null.");
+			printMacs(data);
+			return new Position(0,0);
+		}
+
         //We shift the closest one and set the position to 0,0.
 		Position shift = new Position(-knownLocations.get(closestPair.getMacAsString()).getX(), -knownLocations.get(closestPair.getMacAsString()).getY());
 
@@ -80,6 +90,7 @@ public class AdvancedLocationFinder implements LocationFinder{
 
         if(macRssiPairDistance.size() > 2) {
 			double r1 = macRssiPairDistance.get(closestPair);
+			macRssiPairShiftedPosition.remove(closestPair);
 			double r2 = 0;
 			double d = 0;
 			for (Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
@@ -90,6 +101,7 @@ public class AdvancedLocationFinder implements LocationFinder{
 					} else {
 						d = entry.getValue().getX();
 					}
+					macRssiPairShiftedPosition.remove(entry.getKey());
 					break;
 				}
 			}
@@ -98,12 +110,11 @@ public class AdvancedLocationFinder implements LocationFinder{
 			double i = 0;
 			double j = 0;
 			for(Map.Entry<MacRssiPair, Position> entry : macRssiPairShiftedPosition.entrySet()) {
-				if(entry.getValue().getX() != 0 && entry.getValue().getY() != 0) {
-					r3 = macRssiPairDistance.get(entry.getKey());
-					i = entry.getValue().getX();
-					j = entry.getValue().getY();
-					break;
-				}
+				r3 = macRssiPairDistance.get(entry.getKey());
+				i = entry.getValue().getX();
+				j = entry.getValue().getY();
+				j = j == 0 ? 5 : j;
+				break;
 			}
 
 			System.out.println("Shift: " + shift);
