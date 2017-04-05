@@ -136,6 +136,7 @@ public class AdvancedLocationFinder implements LocationFinder{
 			y = (Math.pow(r1, 2) - Math.pow(r3, 2) + Math.pow(i, 2) + Math.pow(j, 2)) / (2 * j) - (i/j) * x;
 			x -= shift.getX();
 			y -= shift.getY();
+			y = getFirstKnownFromList(data).getY();
 			System.out.println("x: " + x);
 			System.out.println("y: " + y);
 
@@ -154,7 +155,14 @@ public class AdvancedLocationFinder implements LocationFinder{
 
 	    		x = lastPosition.getX() + xdiff * scale;
 	    		y = lastPosition.getY() + ydiff * scale;
-	        }
+	        } else {
+	        	if(Double.isNaN(y) || !Double.isFinite(y)) {
+	        		y = 0;
+				}
+				if(Double.isNaN(x) || !Double.isFinite(x)) {
+	        		x = 0;
+				}
+			}
 
 		} else {
         	if(lastPosition == null) {
@@ -179,7 +187,7 @@ public class AdvancedLocationFinder implements LocationFinder{
 	
 	/**
 	 * Returns the position of the first known AP found in the list of MacRssi pairs
-	 * @param datad
+	 * @param data
 	 * @return
 	 */
 	private Position getFirstKnownFromList(MacRssiPair[] data){
