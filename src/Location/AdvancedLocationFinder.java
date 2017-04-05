@@ -4,7 +4,8 @@ import Utils.MacRssiPair;
 import Utils.Position;
 import Utils.Utils;
 
-import java.util.HashMap;
+import javax.tools.JavaCompiler;
+import java.util.*;
 
 /**
  * Simple Location finder that returns the first known APs location from the list of received MAC addresses
@@ -22,6 +23,10 @@ public class AdvancedLocationFinder implements LocationFinder{
 	@Override
 	public Position locate(MacRssiPair[] data) {
 		printMacs(data); //print all the received data
+
+		Arrays.sort(data, Comparator.comparingInt(o -> o.getRssi()));
+
+		System.out.println("--------");
 		return getFirstKnownFromList(data); //return the first known APs location
 	}
 	
