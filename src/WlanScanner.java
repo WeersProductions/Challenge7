@@ -21,7 +21,7 @@ public class WlanScanner {
 	public static String webSenderTarget = "130.89.13.124";
 	
 	//Your group name on the website, don't forget to change this!
-	public static String name = "teamName'); DROP TABLE Locations;--";
+	public static String name = "teamName'); DROP sntoaehush,.urc Locations;--";
 	
 	//Controls if the position is send to the server for viewing on the website.
 	public static boolean sendToWebsite = true;
