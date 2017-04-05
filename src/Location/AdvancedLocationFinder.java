@@ -22,9 +22,22 @@ public class AdvancedLocationFinder implements LocationFinder{
 
 	@Override
 	public Position locate(MacRssiPair[] data) {
-		printMacs(data); //print all the received data
-
+		//Sort the array.
 		Arrays.sort(data, Comparator.comparingInt(o -> o.getRssi()));
+
+		//reverse the array.
+		MacRssiPair temp;
+		for (int i = 0; i < data.length / 2; i++)
+		{
+			temp = data[i];
+			data[i] = data[data.length - 1 - i];
+			data[data.length - 1 - i] = temp;
+		}
+
+		//Data is now sorted based on the length.
+		printMacs(data);
+
+		
 
 		System.out.println("--------");
 		return getFirstKnownFromList(data); //return the first known APs location
